@@ -1,5 +1,6 @@
 variable "aws_key_name" {
-  description = "MyKeyPair"
+  description = "AWS Key Pair"
+  default     = "MyKeyPair"
 }
 
 variable "count" {
