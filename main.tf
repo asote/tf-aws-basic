@@ -149,9 +149,20 @@ resource "aws_network_acl_rule" "ssh-in" {
   to_port        = 22
 }
 
-resource "aws_network_acl_rule" "custom_tcp-in" {
+resource "aws_network_acl_rule" "rdp-in" {
   network_acl_id = "${aws_network_acl.tier1-sub.id}"
   rule_number    = 400
+  egress         = false
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = "0.0.0.0/0"
+  from_port      = 3389
+  to_port        = 3389
+}
+
+resource "aws_network_acl_rule" "custom_tcp-in" {
+  network_acl_id = "${aws_network_acl.tier1-sub.id}"
+  rule_number    = 500
   egress         = false
   protocol       = "tcp"
   rule_action    = "allow"
@@ -193,9 +204,20 @@ resource "aws_network_acl_rule" "ssh-out" {
   to_port        = 22
 }
 
-resource "aws_network_acl_rule" "custom_tcp-out" {
+resource "aws_network_acl_rule" "rdp-out" {
   network_acl_id = "${aws_network_acl.tier1-sub.id}"
   rule_number    = 400
+  egress         = true
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = "0.0.0.0/0"
+  from_port      = 3389
+  to_port        = 3389
+}
+
+resource "aws_network_acl_rule" "custom_tcp-out" {
+  network_acl_id = "${aws_network_acl.tier1-sub.id}"
+  rule_number    = 500
   egress         = true
   protocol       = "tcp"
   rule_action    = "allow"
@@ -304,8 +326,8 @@ resource "aws_security_group" "db" {
   }
 
   ingress {
-    from_port   = 8
-    to_port     = 0
+    from_port   = -1
+    to_port     = -1
     protocol    = "icmp"
     cidr_blocks = ["10.0.1.0/24"]
   }
