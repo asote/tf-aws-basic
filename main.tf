@@ -293,14 +293,21 @@ resource "aws_security_group" "db" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.1.0/24"]
   }
 
   ingress {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.1.0/24"]
+  }
+
+  ingress {
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
+    cidr_blocks = ["10.0.1.0/24"]
   }
 
   # outbound  access
@@ -352,6 +359,8 @@ resource "aws_elb" "web" {
 }
 
 # Create instances
+
+# Web tier
 resource "aws_instance" "web" {
   count                  = "1"
   ami                    = "ami-0b33d91d"                   # Amazon Linux AMI 2016.09.1 (HVM), SSD Volume Type - ami-0b33d91d
@@ -366,6 +375,48 @@ resource "aws_instance" "web" {
 
   tags = {
     Name          = "web-vm${count.index + 1}"
+    Resource      = "Instance"
+    ResourceGroup = "BasicRG"
+    Environment   = "Lab"
+  }
+}
+
+# Db tier
+resource "aws_instance" "db" {
+  count                  = "1"
+  ami                    = "ami-0b33d91d"                  # Amazon Linux AMI 2016.09.1 (HVM), SSD Volume Type - ami-0b33d91d
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = ["${aws_security_group.db.id}"]
+
+  subnet_id         = "${aws_subnet.tier2-sub.id}"
+  source_dest_check = true
+  key_name          = "${var.aws_key_name}"
+
+  user_data = "${file("install-db.sh")}"
+
+  tags = {
+    Name          = "db-vm${count.index + 1}"
+    Resource      = "Instance"
+    ResourceGroup = "BasicRG"
+    Environment   = "Lab"
+  }
+}
+
+# Bastion host
+resource "aws_instance" "bastion" {
+  count                  = "1"
+  ami                    = "ami-0b33d91d"                       # Amazon Linux AMI 2016.09.1 (HVM), SSD Volume Type - ami-0b33d91d
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = ["${aws_security_group.bastion.id}"]
+
+  subnet_id         = "${aws_subnet.tier1-sub.id}"
+  source_dest_check = true
+  key_name          = "${var.aws_key_name}"
+
+  user_data = "${file("update.sh")}"
+
+  tags = {
+    Name          = "bastion-vm${count.index + 1}"
     Resource      = "Instance"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
