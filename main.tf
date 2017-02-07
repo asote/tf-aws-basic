@@ -333,7 +333,7 @@ resource "aws_elb" "web" {
     lb_protocol       = "http"
   }
 
-  #instances = ["${aws_instance.web.*.id}"]
+  instances = ["${aws_instance.web.*.id}"]
 
   health_check {
     healthy_threshold   = 10
@@ -342,9 +342,31 @@ resource "aws_elb" "web" {
     target              = "HTTP:80/index.html"
     interval            = 30
   }
+
   tags {
     Name          = "myvpc2-tier1-elb"
     Resource      = "ELB"
+    ResourceGroup = "BasicRG"
+    Environment   = "Lab"
+  }
+}
+
+# Create instances
+resource "aws_instance" "web" {
+  count                  = "1"
+  ami                    = "ami-0b33d91d"                   # Amazon Linux AMI 2016.09.1 (HVM), SSD Volume Type - ami-0b33d91d
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = ["${aws_security_group.web.id}"]
+
+  subnet_id         = "${aws_subnet.tier1-sub.id}"
+  source_dest_check = true
+  key_name          = "${var.aws_key_name}"
+
+  user_data = "${file("install-web.sh")}"
+
+  tags = {
+    Name          = "web-vm${count.index + 1}"
+    Resource      = "Instance"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
   }
