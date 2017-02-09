@@ -4,7 +4,7 @@ resource "aws_vpc" "default" {
   enable_dns_hostnames = false
 
   tags {
-    Name          = "MyVPC2"
+    Name          = "MyVPC"
     Resource      = "VPC"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
@@ -19,7 +19,7 @@ resource "aws_subnet" "tier1-sub" {
   map_public_ip_on_launch = true
 
   tags {
-    Name          = "basic-10.0.1.0-us-east-1a"
+    Name          = "10.0.1.0-us-east-1a"
     Resource      = "Subnet"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
@@ -34,7 +34,7 @@ resource "aws_subnet" "tier2-sub" {
   cidr_block        = "10.0.2.0/24"
 
   tags {
-    Name          = "basic-10.0.2.0-us-east-1b"
+    Name          = "10.0.2.0-us-east-1b"
     Resource      = "Subnet"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
@@ -46,7 +46,7 @@ resource "aws_internet_gateway" "default" {
   vpc_id = "${aws_vpc.default.id}"
 
   tags {
-    Name          = "MyIGW2"
+    Name          = "MyIGW"
     Resource      = "IGW"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
@@ -63,7 +63,7 @@ resource "aws_route_table" "public" {
   }
 
   tags {
-    Name        = "MyPublicRoute2"
+    Name        = "MyPublicRoute"
     Environment = "Lab"
   }
 }
@@ -94,6 +94,7 @@ resource "aws_route_table" "private" {
   }
 
   tags {
+    Name        = "MyNatRoute"
     Environment = "Lab"
   }
 }
@@ -109,7 +110,7 @@ resource "aws_network_acl" "tier1-sub" {
   subnet_ids = ["${aws_subnet.tier1-sub.id}"]
 
   tags {
-    Name          = "nacl-tier1-sub"
+    Name          = "nacl-public"
     Resource      = "Subnet"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
@@ -253,6 +254,13 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["10.0.1.0/24"]
   }
 
+  ingress {
+    from_port   = 3389
+    to_port     = 3389
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.1.0/24"]
+  }
+
   # outbound  access
   egress {
     from_port   = 0
@@ -319,6 +327,13 @@ resource "aws_security_group" "db" {
   }
 
   ingress {
+    from_port   = 3389
+    to_port     = 3389
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.1.0/24"]
+  }
+
+  ingress {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
@@ -373,7 +388,7 @@ resource "aws_elb" "web" {
   }
 
   tags {
-    Name          = "myvpc2-tier1-elb"
+    Name          = "myvpc-tier1-elb"
     Resource      = "ELB"
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
