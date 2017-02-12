@@ -253,10 +253,10 @@ resource "aws_network_acl_rule" "icmp-in" {
   icmp_code      = 0
 }
 
-# Create SG for webDMZ
-resource "aws_security_group" "web" {
-  name        = "web-tier1-sg"
-  description = "Security group for web that allows web traffic from internet"
+# Create SG for ELB
+resource "aws_security_group" "elb" {
+  name        = "elb-tier1-sg"
+  description = "Security group for elb that allows web traffic from internet"
   vpc_id      = "${aws_vpc.default.id}"
 
   ingress {
@@ -272,6 +272,28 @@ resource "aws_security_group" "web" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  # outbound  access
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags {
+    Name          = "elb-tier1-sg"
+    Resource      = "SG"
+    ResourceGroup = "BasicRG"
+    Environment   = "Lab"
+  }
+}
+
+# Create SG for webDMZ
+resource "aws_security_group" "web" {
+  name        = "web-tier1-sg"
+  description = "Security group for web that allows web traffic from internet"
+  vpc_id      = "${aws_vpc.default.id}"
 
   ingress {
     from_port   = 22
@@ -308,6 +330,25 @@ resource "aws_security_group" "web" {
     ResourceGroup = "BasicRG"
     Environment   = "Lab"
   }
+}
+
+# Add SG rule to restrict http traffic to allow only from elb
+resource "aws_security_group_rule" "http-in" {
+  type                     = "ingress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  security_group_id        = "${aws_security_group.web.id}"
+  source_security_group_id = "${aws_security_group.elb.id}"
+}
+
+resource "aws_security_group_rule" "https-in" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = "${aws_security_group.web.id}"
+  source_security_group_id = "${aws_security_group.elb.id}"
 }
 
 # Create SG for Bastion host
@@ -401,7 +442,7 @@ resource "aws_elb" "web" {
   name = "myvpc2-tier1-elb"
 
   subnets         = ["${aws_subnet.tier1-sub.id}"]
-  security_groups = ["${aws_security_group.web.id}"]
+  security_groups = ["${aws_security_group.elb.id}"]
 
   listener {
     instance_port     = 80
