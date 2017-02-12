@@ -227,6 +227,32 @@ resource "aws_network_acl_rule" "custom_tcp-out" {
   to_port        = 65535
 }
 
+resource "aws_network_acl_rule" "icmp-out" {
+  network_acl_id = "${aws_network_acl.tier1-sub.id}"
+  rule_number    = 600
+  egress         = true
+  protocol       = "icmp"
+  rule_action    = "allow"
+  cidr_block     = "10.0.2.0/24"
+  from_port      = -1
+  to_port        = -1
+  icmp_type      = 8
+  icmp_code      = 0
+}
+
+resource "aws_network_acl_rule" "icmp-in" {
+  network_acl_id = "${aws_network_acl.tier1-sub.id}"
+  rule_number    = 600
+  egress         = false
+  protocol       = "icmp"
+  rule_action    = "allow"
+  cidr_block     = "10.0.2.0/24"
+  from_port      = -1
+  to_port        = -1
+  icmp_type      = 0
+  icmp_code      = 0
+}
+
 # Create SG for webDMZ
 resource "aws_security_group" "web" {
   name        = "web-tier1-sg"
